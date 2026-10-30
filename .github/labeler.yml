@@ -99,6 +99,11 @@ integration:cometapi:
       - any-glob-to-any-file: "integrations/cometapi/**/*"
       - any-glob-to-any-file: ".github/workflows/cometapi.yml"
 
+integration:companyenrich:
+  - changed-files:
+      - any-glob-to-any-file: "integrations/companyenrich/**/*"
+      - any-glob-to-any-file: ".github/workflows/companyenrich.yml"
+
 integration:datadog:
   - changed-files:
       - any-glob-to-any-file: "integrations/datadog/**/*"

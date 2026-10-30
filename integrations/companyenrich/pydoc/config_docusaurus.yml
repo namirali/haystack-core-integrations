@@ -1,0 +1,14 @@
+loaders:
+  - modules:
+      - haystack_integrations.components.connectors.companyenrich.connector
+      - haystack_integrations.tools.companyenrich.tool
+    search_path: [../src]
+processors:
+  - type: filter
+    documented_only: true
+    skip_empty_modules: true
+renderer:
+  description: CompanyEnrich integration for Haystack
+  id: integrations-companyenrich
+  filename: companyenrich.md
+  title: CompanyEnrich
