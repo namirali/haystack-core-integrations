@@ -37,6 +37,9 @@ class CompanyEnrichCompanyEnricherTool(ComponentTool):
         :param name: Name exposed to the language model.
         :param description: Description exposed to the language model.
         """
+        self.api_key = api_key
+        self.timeout = timeout
+        self.max_retries = max_retries
         super().__init__(
             component=CompanyEnrichCompanyEnricher(api_key=api_key, timeout=timeout, max_retries=max_retries),
             name=name,
@@ -49,9 +52,15 @@ class CompanyEnrichCompanyEnricherTool(ComponentTool):
 
         :returns: Tool type and serialized initialization data.
         """
-        params = self._component.to_dict()["init_parameters"]
-        params.update(name=self.name, description=self.description)
-        return {"type": default_to_dict(self)["type"], "data": params}
+        serialized = default_to_dict(
+            self,
+            api_key=self.api_key,
+            timeout=self.timeout,
+            max_retries=self.max_retries,
+            name=self.name,
+            description=self.description,
+        )
+        return {"type": serialized["type"], "data": serialized["init_parameters"]}
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "CompanyEnrichCompanyEnricherTool":
