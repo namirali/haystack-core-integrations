@@ -3,12 +3,15 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import math
-from typing import Any
+from typing import Any, NoReturn
 
 import httpx
 from haystack import component, default_to_dict
 from haystack.utils import Secret
 from haystack.utils.requests_utils import async_request_with_retry, request_with_retry
+from pydantic import StrictBool
+
+from haystack_integrations.components.connectors.companyenrich._validation import prepare_request
 
 
 @component
@@ -89,34 +92,62 @@ class CompanyEnrichCompanyEnricher:
         return default_to_dict(self, api_key=self.api_key, timeout=self.timeout, max_retries=self.max_retries)
 
     @component.output_types(profile=dict[str, Any])
-    def run(self, domain: str) -> dict[str, Any]:
+    def run(
+        self, domain: str, *, expand: list[str] | None = None, wait_for_enrichment: StrictBool | None = None
+    ) -> dict[str, Any]:
         """
         Enrich one company domain.
 
         :param domain: Non-empty company domain, such as `stripe.com`, at most 1024 characters.
+        :param expand: Optional workforce expansion.
+        :param wait_for_enrichment: Explicit wait option; None preserves the API default.
         :returns: Dictionary with `profile`, containing the complete CompanyEnrich JSON object.
         :raises TypeError: The domain is not a string or the API response is not a JSON object.
         :raises ValueError: The domain is empty or too long, or credentials cannot be resolved.
         :raises httpx.HTTPStatusError: The API returns an unsuccessful HTTP status, including redirects.
         :raises httpx.RequestError: The HTTP request fails or times out.
         """
-        return self._parse_response(request_with_retry(**self._request_kwargs(domain)))
+        try:
+            response = request_with_retry(
+                **self._request_kwargs(domain, expand=expand, wait_for_enrichment=wait_for_enrichment)
+            )
+        except httpx.HTTPStatusError as exc:
+            self._raise_status(exc.response)
+        except httpx.RequestError as exc:
+            message = "CompanyEnrich request failed; check connectivity or timeout"
+            raise type(exc)(message) from None
+        return self._parse_response(response)
 
     @component.output_types(profile=dict[str, Any])
-    async def run_async(self, domain: str) -> dict[str, Any]:
+    async def run_async(
+        self, domain: str, *, expand: list[str] | None = None, wait_for_enrichment: StrictBool | None = None
+    ) -> dict[str, Any]:
         """
         Asynchronously enrich one company domain with native async HTTP I/O.
 
         :param domain: Non-empty company domain, such as `stripe.com`, at most 1024 characters.
+        :param expand: Optional workforce expansion.
+        :param wait_for_enrichment: Explicit wait option; None preserves the API default.
         :returns: Dictionary with `profile`, containing the complete CompanyEnrich JSON object.
         :raises TypeError: The domain is not a string or the API response is not a JSON object.
         :raises ValueError: The domain is empty or too long, or credentials cannot be resolved.
         :raises httpx.HTTPStatusError: The API returns an unsuccessful HTTP status, including redirects.
         :raises httpx.RequestError: The HTTP request fails or times out.
         """
-        return self._parse_response(await async_request_with_retry(**self._request_kwargs(domain)))
+        try:
+            response = await async_request_with_retry(
+                **self._request_kwargs(domain, expand=expand, wait_for_enrichment=wait_for_enrichment)
+            )
+        except httpx.HTTPStatusError as exc:
+            self._raise_status(exc.response)
+        except httpx.RequestError as exc:
+            message = "CompanyEnrich request failed; check connectivity or timeout"
+            raise type(exc)(message) from None
+        return self._parse_response(response)
 
-    def _request_kwargs(self, domain: str) -> dict[str, Any]:
+    def _request_kwargs(
+        self, domain: str, *, expand: list[str] | None = None, wait_for_enrichment: StrictBool | None = None
+    ) -> dict[str, Any]:
         if not isinstance(domain, str):
             message = "domain must be a string"
             raise TypeError(message)
@@ -124,22 +155,43 @@ class CompanyEnrichCompanyEnricher:
         if not domain or len(domain) > 1024:  # noqa: PLR2004
             message = "domain must contain between 1 and 1024 characters"
             raise ValueError(message)
+        query: dict[str, Any] = {"domain": domain}
+        if expand is not None:
+            query["expand"] = expand
+        if wait_for_enrichment is not None:
+            query["waitForEnrichment"] = wait_for_enrichment
+        _, _, query, _ = prepare_request("get_companies_enrich", query=query)
         self.warm_up()
         return {
             "attempts": self.max_retries + 1,
             "method": "GET",
             "url": "https://api.companyenrich.com/companies/enrich",
             "headers": self._headers,
-            "params": {"domain": domain},
+            "params": query,
             "timeout": self.timeout,
             "follow_redirects": False,
         }
 
     @staticmethod
     def _parse_response(response: httpx.Response) -> dict[str, Any]:
-        response.raise_for_status()
-        profile = response.json()
+        try:
+            response.raise_for_status()
+        except httpx.HTTPStatusError:
+            CompanyEnrichCompanyEnricher._raise_status(response)
+        try:
+            profile = response.json()
+        except ValueError:
+            message = "CompanyEnrich returned invalid JSON"
+            raise ValueError(message) from None
         if not isinstance(profile, dict):
             message = "CompanyEnrich returned a JSON value that is not an object"
             raise TypeError(message)
         return {"profile": profile}
+
+    @staticmethod
+    def _raise_status(response: httpx.Response) -> NoReturn:
+        message = f"CompanyEnrich returned HTTP {response.status_code}. Check credentials, credits and inputs."
+        clean = httpx.Request(response.request.method, "https://api.companyenrich.com/companies/enrich")
+        raise httpx.HTTPStatusError(
+            message, request=clean, response=httpx.Response(response.status_code, request=clean)
+        ) from None

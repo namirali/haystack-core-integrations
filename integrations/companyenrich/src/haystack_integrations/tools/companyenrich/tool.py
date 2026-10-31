@@ -15,7 +15,8 @@ class CompanyEnrichCompanyEnricherTool(ComponentTool):
     """
     Expose company domain enrichment to a Haystack Agent or ToolInvoker.
 
-    The LLM supplies only the domain; the API key remains a credential reference outside the tool schema.
+    The LLM supplies the domain and optional expansion/wait settings.
+    The API key remains a credential reference outside the tool schema.
     Results contain the full CompanyEnrich profile. Each request consumes one credit.
     """
 

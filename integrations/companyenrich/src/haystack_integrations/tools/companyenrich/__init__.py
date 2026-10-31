@@ -3,5 +3,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from .tool import CompanyEnrichCompanyEnricherTool
+from .toolset import CompanyEnrichToolset
 
-__all__ = ["CompanyEnrichCompanyEnricherTool"]
+__all__ = ["CompanyEnrichCompanyEnricherTool", "CompanyEnrichToolset"]

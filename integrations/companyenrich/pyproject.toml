@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "companyenrich-haystack"
 dynamic = ["version"]
-description = "CompanyEnrich company enrichment component and tool for Haystack"
+description = "CompanyEnrich company and people data components and toolset for Haystack"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "Apache-2.0"

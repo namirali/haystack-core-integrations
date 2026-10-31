@@ -18,7 +18,7 @@ def test_tool_schema_invocation_and_roundtrip(monkeypatch):
         name="enrich_account",
         description="Enrich a customer domain",
     )
-    assert set(tool.parameters["properties"]) == {"domain"}
+    assert set(tool.parameters["properties"]) == {"domain", "expand", "wait_for_enrichment"}
     assert tool.parameters["required"] == ["domain"]
     serialized = tool.to_dict()
     assert "test-companyenrich-key" not in str(serialized)
