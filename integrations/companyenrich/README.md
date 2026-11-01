@@ -46,5 +46,11 @@ current credit costs. No authenticated or billable API calls were made to valida
 Follow the [Contribution Guidelines](https://github.com/deepset-ai/haystack-core-integrations/blob/main/CONTRIBUTING.md).
 From this integration directory, run `hatch run test:unit`, `hatch run test:types`, `hatch run fmt-check`, and `hatch build`.
 Live tests require `COMPANYENRICH_API_KEY` and `COMPANYENRICH_RUN_PAID_TESTS=1`; `hatch run test:integration` makes two
-enrichment calls and consumes two credits. Live validation and upstream proposal approval remain prerequisites for an
-upstream PR. The optional CI workflow remains an inert sidecar pending the contributor token's workflow scope.
+enrichment calls and consumes two credits. They have not been run. The repository's
+[agent guidelines](https://github.com/deepset-ai/haystack-core-integrations/blob/main/AGENTS.md#testing) ask contributors
+to run external-API tests locally with a personal key first.
+
+[The proposal](https://github.com/deepset-ai/haystack-core-integrations/issues/4179) is awaiting feedback. The contribution
+guidelines do not explicitly require proposal acceptance before opening a PR. The integration CI workflow is prepared
+as an inert sidecar but is not active in this fork: pushing the workflow requires a credential with GitHub `workflow`
+scope.
